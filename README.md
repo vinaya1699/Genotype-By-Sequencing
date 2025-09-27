@@ -1,4 +1,3 @@
-```
 **🌱 Genotype-By-Sequencing (GBS)**
 
 Genotype-By-Sequencing (GBS) is a cost-effective and efficient Next-Generation Sequencing (NGS) protocol designed to discover and genotype Single Nucleotide Polymorphisms (SNPs) in crop genomes and populations.
