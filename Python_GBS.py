@@ -34,7 +34,7 @@ print(f"Script started at: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'
 
 # Argument parser for command-line options
 parser = argparse.ArgumentParser(description="GBS Automation Script")
-parser.add_argument('-d', '--Input_Directory', type=str,required=True, help='Input directory containing raw FASTQ files')
+parser.add_argument('-d', '--Working_Directory', type=str,required=True, help='Input working directory containing raw FASTQ files')
 parser.add_argument('-t', '--threads', type=int, default=4, help='Number of threads')
 parser.add_argument('-org', '--organism', type=str, required=True, help='Organism name (reference fasta prefix)')
 parser.add_argument('--qual', type=float, default=30, help='Minimum QUAL value')
@@ -47,8 +47,8 @@ threads = args.threads
 organism = args.organism
 
 # Change to input directory
-os.chdir(args.Input_Directory)
-print(f"Changed working directory to: {args.Input_Directory}")
+os.chdir(args.Working_Directory)
+print(f"Changed working directory to: {args.Working_Directory}")
 
 
 ref_dir = "0_Reference_Genome"
@@ -166,10 +166,19 @@ for sample in samples:
 
 print("############################### Indexing Ref. Genome ##################################")
 
-# Index reference genome only if no .amb file is present
-amb_files = glob.glob(f"{ref_dir}/*.amb" & glob.glob(f"{ref_dir}/*.ann") & glob.glob(f"{ref_dir}/*.bwt") & glob.glob(f"{ref_dir}/*.pac") & glob.glob(f"{ref_dir}/*.sa") & glob.glob(f"{ref_dir}/*.fai"))
-if not amb_files:
-    print(f"No .amb file found in {ref_dir}. Indexing reference genome...")
+# List of required index extensions
+index_extensions = [".amb", ".ann", ".bwt", ".pac", ".sa", ".fai"]
+
+# Build full file paths for the required index files
+missing_files = []
+for ext in index_extensions:
+    file_path = os.path.join(ref_dir, os.path.splitext(os.path.basename(ref_fasta))[0] + ext)
+    if not os.path.exists(file_path):
+        missing_files.append(file_path)
+
+if missing_files:
+    print(f"Missing index files: {missing_files}")
+    print("Indexing reference genome...")
     cmd = ["bwa", "index", ref_fasta]
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     for line in process.stdout:
@@ -177,7 +186,7 @@ if not amb_files:
     process.wait()
     print("Reference genome indexing completed.")
 else:
-    print(".amb file found. Reference genome is already indexed.")
+    print("All index files found. Reference genome is already indexed.")
 
 print("############################### Alignment & MarkDuplicates ##################################")
 
