@@ -4,7 +4,8 @@ Genotype-By-Sequencing (GBS) is a cost-effective and efficient Next-Generation S
 It is widely used in plant breeding, population genetics, and evolutionary studies.
 
 ```
-🖼️ Workflow 
+🖼️ Workflow
+
 <img width="2000" height="2886" alt="GBS" src="https://github.com/user-attachments/assets/9b864ffe-aa59-4746-ba90-dd622efb056a" />
 
 ```
