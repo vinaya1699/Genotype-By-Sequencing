@@ -6,7 +6,7 @@ It is widely used in plant breeding, population genetics, and evolutionary studi
 ```
 🖼️ Workflow
 
-<img width="300" height="500" alt="GBS" src="https://github.com/user-attachments/assets/9b864ffe-aa59-4746-ba90-dd622efb056a" />
+<img width="300" height="1000" alt="GBS" src="https://github.com/user-attachments/assets/9b864ffe-aa59-4746-ba90-dd622efb056a" />
 
 ```
 
