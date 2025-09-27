@@ -19,7 +19,7 @@ It is widely used in plant breeding, population genetics, and evolutionary studi
 
 ```
 ```
-⚙️ Setup Instructions and usage
+⚙️ Setup Instructions
 
 Download and place tools in your preferred location.
 
@@ -33,10 +33,40 @@ snpEff_data="/path/to/snpEff5.0/data"
 
 
 **Run the pipeline as usual. The scripts will use the tools at the specified paths.**
-
-# Example Usage : 
+```
+```
+💡 Example Usage
 python Python_GBS.py -org Phaseolus_vulgaris --qual 40 --min_dp 10 --f_missing 0.7 --min_af 0.1
-
+Required Arguments
+Argument	Description
+-d, --Working_Directory	Input working directory containing raw FASTQ files. Example: /path/to/data
+-org, --organism	Organism name or prefix for the reference genome FASTA. Example: Phaseolus_vulgaris
+Optional Arguments
+Argument	Default	Description
+-t, --threads	4	Number of CPU threads for parallel processing.
+--qual	30	Minimum QUAL value for variant filtering.
+--min_dp	5	Minimum depth (INFO/DP) for a variant.
+--f_missing	0.8	Maximum fraction of missing data per SNP.
+--min_af	0.05	Minimum allele frequency to retain a variant.
+Optional Paths for Tools
+Argument	Default	Description
+--picard	/Analysis3/Vinaya/picard.jar	Path to Picard JAR file.
+--gatk	/apps/gatk-4.2.6.1/gatk	Path to GATK executable.
+--snpEff	/apps/snpEff5.0/snpEff.jar	Path to snpEff JAR for variant annotation.
+--snpEff_data	/apps/snpEff5.0/data	Directory containing snpEff reference databases.
+Example Usage Including Tools
+python Genotype_By_Sequencing.py \
+    -d /mnt/data/GBS_samples \
+    -org Phaseolus_vulgaris \
+    --threads 8 \
+    --qual 40 \
+    --min_dp 10 \
+    --f_missing 0.7 \
+    --min_af 0.1 \
+    --picard /custom/path/picard.jar \
+    --gatk /custom/path/gatk \
+    --snpEff /custom/path/snpEff.jar \
+    --snpEff_data /custom/path/snpEff/data
 
 ```
 ```
