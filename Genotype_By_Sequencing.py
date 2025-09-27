@@ -42,10 +42,24 @@ parser.add_argument('--min_dp', type=int, default=5, help='Minimum INFO/DP value
 parser.add_argument('--f_missing', type=float, default=0.8, help='Maximum F_MISSING value')
 parser.add_argument('--min_af', type=float, default=0.05, help='Minimum allele frequency')
 
+# Optional paths for tools
+parser.add_argument('--picard', type=str, default="/Analysis3/Vinaya/picard.jar",help='Path to picard.jar')
+parser.add_argument('--gatk', type=str, default="/apps/gatk-4.2.6.1/gatk",help='Path to GATK executable')
+parser.add_argument('--snpEff', type=str, default="/apps/snpEff5.0/snpEff.jar",help='Path to snpEff.jar')
+parser.add_argument('--snpEff_data', type=str, default="/apps/snpEff5.0/data",help='Path to snpEff data directory')
 
-args = parser.parse_args()
+# Assign to variables
+working_dir = args.Working_Directory
 threads = args.threads
 organism = args.organism
+picard = args.picard
+gatk = args.gatk
+snpEff = args.snpEff
+snpEff_data = args.snpEff_data
+qual = args.qual
+min_dp = args.min_dp
+f_missing = args.f_missing
+min_af = args.min_af
 
 # Change to input directory
 os.chdir(args.Working_Directory)
