@@ -1,5 +1,5 @@
 # Example Usage : 
-# python Python_GBS.py -org Phaseolus_vulgaris --qual 40 --min_dp 10 --f_missing 0.7 --min_af 0.1
+# python Genotype_By_Sequencing.py -org Phaseolus_vulgaris --qual 40 --min_dp 10 --f_missing 0.7 --min_af 0.1
 print(r"""
    ____   ____   ____
   / ___| | __ ) | ___|
