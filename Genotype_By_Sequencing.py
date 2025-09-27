@@ -42,6 +42,7 @@ parser.add_argument('--min_dp', type=int, default=5, help='Minimum INFO/DP value
 parser.add_argument('--f_missing', type=float, default=0.8, help='Maximum F_MISSING value')
 parser.add_argument('--min_af', type=float, default=0.05, help='Minimum allele frequency')
 
+
 args = parser.parse_args()
 threads = args.threads
 organism = args.organism
@@ -53,9 +54,11 @@ print(f"Changed working directory to: {args.Working_Directory}")
 
 ref_dir = "0_Reference_Genome"
 ref_fasta = f"{ref_dir}/{organism}.fasta"
+gvcf_dir = "4_Variant_Calling"
+
+# Required Tools :
 picard = "/Analysis3/Vinaya/picard.jar"
 gatk = "/apps/gatk-4.2.6.1/gatk"  
-gvcf_dir = "4_Variant_Calling"
 snpEff = "/apps/snpEff5.0/snpEff.jar"
 snpEff_data="/apps/snpEff5.0/data"
 
