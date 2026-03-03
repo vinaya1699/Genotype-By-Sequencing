@@ -42,24 +42,9 @@ parser.add_argument('--min_dp', type=int, default=5, help='Minimum INFO/DP value
 parser.add_argument('--f_missing', type=float, default=0.8, help='Maximum F_MISSING value')
 parser.add_argument('--min_af', type=float, default=0.05, help='Minimum allele frequency')
 
-# Optional paths for tools
-parser.add_argument('--picard', type=str, default="/Analysis3/Vinaya/picard.jar",help='Path to picard.jar')
-parser.add_argument('--gatk', type=str, default="/apps/gatk-4.2.6.1/gatk",help='Path to GATK executable')
-parser.add_argument('--snpEff', type=str, default="/apps/snpEff5.0/snpEff.jar",help='Path to snpEff.jar')
-parser.add_argument('--snpEff_data', type=str, default="/apps/snpEff5.0/data",help='Path to snpEff data directory')
-
-# Assign to variables
-working_dir = args.Working_Directory
+args = parser.parse_args()
 threads = args.threads
 organism = args.organism
-picard = args.picard
-gatk = args.gatk
-snpEff = args.snpEff
-snpEff_data = args.snpEff_data
-qual = args.qual
-min_dp = args.min_dp
-f_missing = args.f_missing
-min_af = args.min_af
 
 # Change to input directory
 os.chdir(args.Working_Directory)
@@ -68,11 +53,9 @@ print(f"Changed working directory to: {args.Working_Directory}")
 
 ref_dir = "0_Reference_Genome"
 ref_fasta = f"{ref_dir}/{organism}.fasta"
-gvcf_dir = "4_Variant_Calling"
-
-# Required Tools :
 picard = "/Analysis3/Vinaya/picard.jar"
 gatk = "/apps/gatk-4.2.6.1/gatk"  
+gvcf_dir = "4_Variant_Calling"
 snpEff = "/apps/snpEff5.0/snpEff.jar"
 snpEff_data="/apps/snpEff5.0/data"
 
@@ -415,14 +398,13 @@ print(f"Total script duration: {time.time() - script_start:.2f} seconds")
 # After joint genotyping, add:
 print("############################### SNP Extraction and Filtering ##################################")
 
-bcftools = "/node4_apps_940/Abitha_conda/envs/variantdetective/bin/bcftools"
 jointvcf = "joint_genotyped.vcf.gz"
 snps_vcf = "snps_only.vcf"
 filtered_vcf = "Filtered_SNP.vcf.gz"
 
 # 1. Extract SNPs only
 snps_cmd = [
-    bcftools, "view", "-v", "snps", "-o", snps_vcf, "-O", "v", jointvcf
+    gatk, "SelectVariants", "-V", jointvcf, "-select-type", "SNP", "-O", snps_vcf
 ]
 print("Extracting SNPs only...")
 process = subprocess.Popen(snps_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -434,11 +416,15 @@ print(f"SNPs extracted to {snps_vcf}")
 # 2. Filter SNPs with user parameters
 filter_expr = f"QUAL <= {args.qual} && INFO/DP <= {args.min_dp} && F_MISSING=={args.f_missing}"
 filter_cmd = [
-    bcftools, "view",
-    "--min-af", str(args.min_af),
-    "-e", filter_expr,
-    "--threads", str(threads),
-    "-Oz", "-o", filtered_vcf, snps_vcf
+    gatk, "VariantFiltration", "-V", snps_vcf,
+        "-filter", "QD < 2.0", "--filter-name", "QD2",
+        "-filter", "QUAL < 30.0", "--filter-name", "QUAL30",
+        "-filter", "SOR > 3.0", "--filter-name", "SOR3",
+        "-filter", "FS > 60.0", "--filter-name", "FS60",
+        "-filter", "MQ < 40.0", "--filter-name", "MQ40",
+        "-filter", "MQRankSum < -12.5", "--filter-name", "MQRankSum-12.5",
+        "-filter", "ReadPosRankSum < -8.0", "--filter-name", "ReadPosRankSum-8",
+        "-O", filtered_vcf
 ]
 print("Filtering SNPs with user-defined parameters...")
 process = subprocess.Popen(filter_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
