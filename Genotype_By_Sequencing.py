@@ -1,5 +1,5 @@
 # Example Usage : 
-# python Genotype_By_Sequencing.py -org Phaseolus_vulgaris --qual 40 --min_dp 10 --f_missing 0.7 --min_af 0.1
+# python Python_GBS.py -org Phaseolus_vulgaris -t 20 -d /path/to/working_directory 
 print(r"""
    ____   ____   ____
   / ___| | __ ) | ___|
@@ -13,7 +13,7 @@ print(r"""
 
 print(r"""
       # Example Usage : 
-# python Python_GBS.py -org Phaseolus_vulgaris --qual 40 --min_dp 10 --f_missing 0.7 --min_af 0.1
+# python Python_GBS.py -org Phaseolus_vulgaris -t 20 -d /path/to/working_directory 
 """)
 
 import pandas as pd
@@ -37,10 +37,10 @@ parser = argparse.ArgumentParser(description="GBS Automation Script")
 parser.add_argument('-d', '--Working_Directory', type=str,required=True, help='Input working directory containing raw FASTQ files')
 parser.add_argument('-t', '--threads', type=int, default=4, help='Number of threads')
 parser.add_argument('-org', '--organism', type=str, required=True, help='Organism name (reference fasta prefix)')
-parser.add_argument('--qual', type=float, default=30, help='Minimum QUAL value')
-parser.add_argument('--min_dp', type=int, default=5, help='Minimum INFO/DP value')
-parser.add_argument('--f_missing', type=float, default=0.8, help='Maximum F_MISSING value')
-parser.add_argument('--min_af', type=float, default=0.05, help='Minimum allele frequency')
+# parser.add_argument('--qual', type=float, default=30, help='Minimum QUAL value')
+# parser.add_argument('--min_dp', type=int, default=5, help='Minimum INFO/DP value')
+# parser.add_argument('--f_missing', type=float, default=0.8, help='Maximum F_MISSING value')
+# parser.add_argument('--min_af', type=float, default=0.05, help='Minimum allele frequency')
 
 args = parser.parse_args()
 threads = args.threads
