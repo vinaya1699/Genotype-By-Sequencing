@@ -37,6 +37,8 @@ parser = argparse.ArgumentParser(description="GBS Automation Script")
 parser.add_argument('-d', '--Working_Directory', type=str,required=True, help='Input working directory containing raw FASTQ files')
 parser.add_argument('-t', '--threads', type=int, default=4, help='Number of threads')
 parser.add_argument('-org', '--organism', type=str, required=True, help='Organism name (reference fasta prefix)')
+parser.add_argument('--annotation-file', type=str, default=None, help='Explicit annotation file ( GTF/GFF/GFF3 )')
+parser.add_argument('--annotation-format', type=str, choices=['gtf', 'gff', 'gff3'], default=None, help='Annotation format for snpEff build; autodetect if not set')
 # parser.add_argument('--qual', type=float, default=30, help='Minimum QUAL value')
 # parser.add_argument('--min_dp', type=int, default=5, help='Minimum INFO/DP value')
 # parser.add_argument('--f_missing', type=float, default=0.8, help='Maximum F_MISSING value')
@@ -57,7 +59,8 @@ picard = "/Analysis3/Vinaya/picard.jar"
 gatk = "/apps/gatk-4.2.6.1/gatk"  
 gvcf_dir = "4_Variant_Calling"
 snpEff = "/apps/snpEff5.0/snpEff.jar"
-snpEff_data="/apps/snpEff5.0/data"
+snpEff_data="/mnt/tnas/SnpEff5.0_Database/data"
+snpEff_config = "/mnt/tnas/SnpEff5.0_Database/"
 
 Input_Raw_files = glob.glob("1_RawData/*_R1.fastq.gz")
 print(Input_Raw_files)
@@ -277,30 +280,13 @@ else:
 
 for sample in samples:
     marked_bam = f"3_Alignment/{sample}_sorted_rdgrp_dup_marked.bam"
-    gvcf = f"{gvcf_dir}/{sample}.gvcf"
-    log = f"{gvcf_dir}/{sample}.gvcf.log"
-    cmd = [
-        gatk, "HaplotypeCaller",
-        "-I", marked_bam,
-        "-R", ref_fasta,
-        "-O", gvcf,
-        "-ERC", "GVCF"
-    ]
-    print(f"Running GATK HaplotypeCaller for sample: {sample}")
-    with open(log, "w") as logfile:
-        process = subprocess.Popen(cmd, stdout=logfile, stderr=subprocess.STDOUT, text=True)
-        process.wait()
-    print(f"GVCF generated: {gvcf}")
-
-print("GATK HaplotypeCaller completed for all samples.")
-
-for sample in samples:
-    marked_bam = f"3_Alignment/{sample}_sorted_rdgrp_dup_marked.bam"
-    bam_index = f"{marked_bam}.bai"
+    # bam_index = f"{marked_bam}.bai"
+    bam_index = f"{marked_bam}.csi"
     # Index BAM if not present
     if not os.path.exists(bam_index):
         print(f"Indexing BAM file for sample {sample}: {marked_bam}")
-        cmd = ["samtools", "index", marked_bam]
+        # cmd = ["samtools", "index", marked_bam]
+        cmd = ["samtools", "index",  "-c",marked_bam]
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         for line in process.stdout:
             print(line, end='')
@@ -376,7 +362,7 @@ print("GenomicsDBImport completed.")
 # 4. Run GenotypeGVCFs
 jointvcf = "joint_genotyped.vcf.gz"
 genotypecmd = [
-    "gatk", "--java-options", "-DGATK_STACKTRACE_ON_USER_EXCEPTION=true",
+    gatk, "--java-options", "-DGATK_STACKTRACE_ON_USER_EXCEPTION=true",
     "GenotypeGVCFs", "-R", ref_fasta,
     "-V", f"gendb://{genomicsdb_dir}", "-O", jointvcf
 ]
@@ -414,7 +400,7 @@ process.wait()
 print(f"SNPs extracted to {snps_vcf}")
 
 # 2. Filter SNPs with user parameters
-filter_expr = f"QUAL <= {args.qual} && INFO/DP <= {args.min_dp} && F_MISSING=={args.f_missing}"
+# filter_expr = f"QUAL <= {args.qual} && INFO/DP <= {args.min_dp} && F_MISSING=={args.f_missing}"
 filter_cmd = [
     gatk, "VariantFiltration", "-V", snps_vcf,
         "-filter", "QD < 2.0", "--filter-name", "QD2",
@@ -447,11 +433,61 @@ ref_fasta_dest = os.path.join(organism_snpEff_dir, "sequences.fa")
 print(f"Copying reference fasta {ref_fasta} to {ref_fasta_dest}")
 shutil.copy2(ref_fasta, ref_fasta_dest)
 
-# Copy GTF annotation, assuming it is alongside fasta with .gtf extension
-ref_gtf = os.path.splitext(ref_fasta)[0] + ".gtf"
-ref_gtf_dest = os.path.join(organism_snpEff_dir, "genes.gtf")
-print(f"Copying annotation GTF {ref_gtf} to {ref_gtf_dest}")
-shutil.copy2(ref_gtf, ref_gtf_dest)
+# Copy annotation, support GTF/GFF/GFF3
+annotation_file = args.annotation_file
+annotation_format = args.annotation_format
+if annotation_file:
+    if not os.path.isabs(annotation_file):
+        annotation_file = os.path.join(args.Working_Directory, annotation_file)
+    if not os.path.exists(annotation_file):
+        raise FileNotFoundError(f"Annotation file not found: {annotation_file}")
+    _, ext = os.path.splitext(annotation_file)
+    ext = ext.lower()
+    if ext == ".gtf":
+        annotation_format = "gtf"
+    elif ext in [".gff3", ".gff"]:
+        annotation_format = "gff3" if ext == ".gff3" else "gff"
+    else:
+        raise ValueError(f"Unsupported annotation file extension: {ext}")
+else:
+    if annotation_format:
+        annotation_format = annotation_format.lower()
+        if annotation_format not in ["gtf", "gff", "gff3"]:
+            raise ValueError(f"Unsupported annotation format: {annotation_format}")
+        candidate = f"{os.path.splitext(ref_fasta)[0]}.{annotation_format}"
+        if annotation_format == "gff3" and not os.path.exists(candidate):
+            candidate = f"{os.path.splitext(ref_fasta)[0]}.gff"  # fallback
+        if not os.path.exists(candidate):
+            raise FileNotFoundError(f"Annotation file not found for --annotation-format {annotation_format}: {candidate}")
+        annotation_file = candidate
+    else:
+        preferred = [".gtf", ".gff3", ".gff"]
+        for suf in preferred:
+            candidate = f"{os.path.splitext(ref_fasta)[0]}{suf}"
+            if os.path.exists(candidate):
+                annotation_file = candidate
+                break
+        if not annotation_file:
+            raise FileNotFoundError("No annotation file found (searched .gtf, .gff3, .gff)")
+        _, ext = os.path.splitext(annotation_file)
+        if ext.lower() == ".gtf":
+            annotation_format = "gtf"
+        elif ext.lower() == ".gff3":
+            annotation_format = "gff3"
+        else:
+            annotation_format = "gff"
+
+if annotation_format == "gtf":
+    ann_dest = os.path.join(organism_snpEff_dir, "genes.gtf")
+    snpEff_build_mode = "-gtf22"
+elif annotation_format in ["gff", "gff3"]:
+    ann_dest = os.path.join(organism_snpEff_dir, "genes.gff")
+    snpEff_build_mode = "-gff3"
+else:
+    raise ValueError(f"Unsupported annotation format after detection: {annotation_format}")
+
+print(f"Copying annotation {annotation_file} to {ann_dest} (format {annotation_format})")
+shutil.copy2(annotation_file, ann_dest)
 
 print("Reference genome and annotation copied and renamed for snpEff.")
 
@@ -459,10 +495,10 @@ print("Reference genome and annotation copied and renamed for snpEff.")
 # Check if the database already exists by looking for the 'snpEffectPredictor.bin' file
 snpEff_db_file = os.path.join(organism_snpEff_dir, "snpEffectPredictor.bin")
 if not os.path.exists(snpEff_db_file):
-    print(f"Building snpEff database for organism: {organism}")
+    print(f"Building snpEff database for organism: {organism} with {annotation_format} annotations")
     build_cmd = [
         "java", "-jar", snpEff,
-        "build", "-gtf22", "-v", organism
+        "build", snpEff_build_mode, "-v", "-c", snpEff_config, organism
     ]
     process = subprocess.Popen(build_cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     for line in process.stdout:
@@ -477,6 +513,7 @@ filtered_vcf = "Filtered_SNP.vcf.gz"
 annotated_vcf = "Annotated_SNP.vcf"
 annotate_cmd = [
     "java", "-jar", snpEff,
+    "-c", snpEff_config,
     "-v", organism,     
     filtered_vcf
 ]
